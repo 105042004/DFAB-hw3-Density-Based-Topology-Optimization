@@ -1,0 +1,13 @@
+#build forlder
+build/
+
+#development confuguration
+.vscode/
+.vs/
+
+# genrated python libraries
+*.so
+*.pyd
+
+# blender files
+*.blend*
