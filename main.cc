@@ -65,6 +65,8 @@ int main(int argc, const char *argv[]) {
 
         topOpt = std::make_unique<TopologyOptimizer>(V, T);
         topOpt->applyBoundaryConditions(bc);
+        topOpt->configure2DPinConstraints(gs_z);
+
         const int numVoxels = T.rows() / 5;
         Eigen::Vector3i gridShape = gridSamples.array() - 1;
         topOpt->densities.filters.push_back(std::make_unique<ProjectionFilter>());
@@ -207,7 +209,7 @@ int main(int argc, const char *argv[]) {
             ImGui::Indent();
             if (bc.type[c] == BoundaryConditions::Type::Force) {
                 for (int d = 0; d < 3; ++d)
-                    forcesUpdated |= ImGui::SliderFloat((std::string("Force ") + ("xyz"[d]) + "##" + std::to_string(c)).c_str(), &bc.data[c][d], /* vmin */ -500.0f, /* vmax */ 500.0f, /* format */ "%0.6f");
+                    forcesUpdated |= ImGui::SliderFloat((std::string("Force ") + ("xyz"[d]) + "##" + std::to_string(c)).c_str(), &bc.data[c][d], /* vmin */ -50.0f, /* vmax */ 50.0f, /* format */ "%0.6f");
             }
             if (bc.type[c] == BoundaryConditions::Type::Support) {
                 for (int d = 0; d < 3; ++d) {
@@ -302,7 +304,10 @@ int main(int argc, const char *argv[]) {
             dfile << topOpt->densities.rho() << std::endl;
         }
 
-        if (bcUpdate || forcesUpdated) topOpt->applyBoundaryConditions(bc);
+        if (bcUpdate || forcesUpdated) {
+            topOpt->applyBoundaryConditions(bc);
+            topOpt->configure2DPinConstraints(gs_z);
+        }
 
         if (forcesUpdated)
             runSimulation();

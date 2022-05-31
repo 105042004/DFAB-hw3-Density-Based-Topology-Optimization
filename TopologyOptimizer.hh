@@ -194,6 +194,19 @@ struct TopologyOptimizer {
         m_KFactorizationCache = false;
     }
 
+    void configure2DPinConstraints(size_t gs_z) {
+        // When solving "2D problems" on a thin grid in 3D, meshing-induced
+        // asymmetry and an extremely low bending resistance can cause the
+        // structure to undergo significant out-of-plane deformation. We
+        // prevent this deformation by applying a `z = 0` constraint to all
+        // vertices in this case; this is equivalent to solving a plane strain
+        // 2D elasticity problem.
+        if ((gs_z > 1) || m_Fext.col(2).norm() > 0) return;
+        if (m_isSupportVar.size() != 3 * numVertices()) throw std::runtime_error("Unexpected size of m_isSupportVar");
+        Eigen::Map<Eigen::Array<bool, Eigen::Dynamic, 3, Eigen::RowMajor>>(m_isSupportVar.data(), numVertices(), 3).col(2).setOnes();
+        m_KFactorizationCache = false;
+    }
+
 #if HAS_CHOLMOD
     using Solver = Eigen::CholmodSupernodalLLT<SpMat>;
 #else
