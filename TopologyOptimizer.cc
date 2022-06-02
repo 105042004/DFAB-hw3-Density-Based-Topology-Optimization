@@ -122,10 +122,10 @@ double TopologyOptimizer::solveEquilibriumProblem(MX3d &U) const {
 
         // TODO: Task 3.4
         // Modify the linear system `K u = f ` to apply the boundary conditions.
-        for (int i = 1; i < K.outerSize(); ++i) {           // loop over columns
+        for (int i = 0; i < K.outerSize(); ++i) {           // loop over columns
             for (SpMat::InnerIterator it(K, i); it; ++it) { // loop over nonzeros in col
 
-                if (m_isSupportVar[it.col()] && m_isSupportVar[it.row()]) { // current block is constrain vertex, set to I
+                if (m_isSupportVar[it.col()] || m_isSupportVar[it.row()]) { // current block is constrain vertex, set to I
                     if (it.col() == it.row()) { // on diagonal, set to 1
                         it.valueRef() = 1.0;
                     }
@@ -133,14 +133,11 @@ double TopologyOptimizer::solveEquilibriumProblem(MX3d &U) const {
                         it.valueRef() = 0.0;
                     }
                 }
-                else if (m_isSupportVar[it.col()] || m_isSupportVar[it.row()]) { // current block is related to constrain vertex, set to 0
-                    it.valueRef() = 0.0;
-                }
             }
         }
 
         // overwrite corresponding entries with zero
-        for (int i = 0; i < f.size() i++) {
+        for (int i = 0; i < f.size(); i++) {
             if (m_isSupportVar[i]) {
                 f(i) = 0.0;
             }
