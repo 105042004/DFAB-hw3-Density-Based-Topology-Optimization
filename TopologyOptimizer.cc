@@ -31,7 +31,7 @@ TopologyOptimizer::StrainPhis TopologyOptimizer::getStrainVecPhis(int e) const {
     StrainPhis result;
     Eigen::Matrix3d strain;
     Eigen::Vector3d v1, v2, grad_basis;
-    Eigen::Matrix3d I = EIgen::Matrix<double, 3, 3>::Identity()
+    Eigen::Matrix3d I(Eigen::Matrix3d::Identity(3, 3));
 
     for (int v = 0; v < 4; v++ ) {
         if (v == 0){
