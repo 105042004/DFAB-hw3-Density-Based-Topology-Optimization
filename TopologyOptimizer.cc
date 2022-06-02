@@ -91,8 +91,24 @@ TopologyOptimizer::SpMat TopologyOptimizer::buildStiffnessMatrix() const {
     // TODO: Task 3.3
     // Assemble (the lower triangle of) the global stiffness matrix.
     // Remember to apply the SIMP interpolation law!
-    K.setIdentity();
+    using Triplet = Eigen::Triplet<double>;
+    std::vector<Triplet> triplets;
 
+    for (int e = 0; e < numElements; e++) {
+        PerElementStiffnessMatrix Ke = (Y_min + (1 - Y_min) * pow(m_rho(e), p)) * perElementStiffnessMatrix(e);
+
+        for (int i = 0; i < 12; i++) {
+            for (int j = 0; j < 12; j++) {
+                int rowIndex = 3*m_T(e, i/3) + i%3;
+                int colIndex = 3*m_T(e, j/3) + j%3; 
+
+                triplets.emplace_back( rowIndex, colIndex, Ke(i, j));
+            }
+        }
+    }
+    K.setFromTriplets(triplets.begin(), triplets.end());
+
+    // K.setIdentity();
     return K;
 }
 
