@@ -94,8 +94,8 @@ TopologyOptimizer::SpMat TopologyOptimizer::buildStiffnessMatrix() const {
     using Triplet = Eigen::Triplet<double>;
     std::vector<Triplet> triplets;
 
-    for (int e = 0; e < numElements; e++) {
-        PerElementStiffnessMatrix Ke = (Y_min + (1 - Y_min) * pow(m_rho(e), p)) * perElementStiffnessMatrix(e);
+    for (int e = 0; e < numElements(); e++) {
+        PerElementStiffnessMatrix Ke = (Y_min + (1 - Y_min) * pow(densities.rho(e), p)) * perElementStiffnessMatrix(e);
 
         for (int i = 0; i < 12; i++) {
             for (int j = 0; j < 12; j++) {
