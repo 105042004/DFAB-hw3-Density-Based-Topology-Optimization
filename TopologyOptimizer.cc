@@ -29,8 +29,36 @@ TopologyOptimizer::StrainPhis TopologyOptimizer::getStrainVecPhis(int e) const {
     // TODO: Task 3.1
     // Compute the strains of the 12 vector-valued basis functions in element `e`.
     StrainPhis result;
+    Eigen::Matrix3d strain;
+    Eigen::Vector3d v1, v2, grad_basis;
+    Eigen::Matrix3d I = EIgen::Matrix<double, 3, 3>::Identity()
 
-    result[0] = Eigen::Matrix3d::Zero(); // You can compute each strain in an Eigen::Matrix3d despite the compact `SymmetricMatrix` type it's converted to.
+    for (int v = 0; v < 4; v++ ) {
+        if (v == 0){
+            v1 = m_V.row(m_T(e, 3)) - m_V.row(m_T(e, 1));
+            v2 = m_V.row(m_T(e, 2)) - m_V.row(m_T(e, 1));
+        }
+        else if (v == 1) {
+            v1 = m_V.row(m_T(e, 2)) - m_V.row(m_T(e, 0));
+            v2 = m_V.row(m_T(e, 3)) - m_V.row(m_T(e, 0));
+        }
+        else if (v == 2) {
+            v1 = m_V.row(m_T(e, 3)) - m_V.row(m_T(e, 0));
+            v2 = m_V.row(m_T(e, 1)) - m_V.row(m_T(e, 0));
+        }
+        else if (v == 3) {
+            v1 = m_V.row(m_T(e, 1)) - m_V.row(m_T(e, 0));
+            v2 = m_V.row(m_T(e, 2)) - m_V.row(m_T(e, 0));
+        }
+        grad_basis = v1.cross(v2) / (6.0 * m_vols(e));
+
+        for (int d = 0; d < 3; d++ ) {
+            strain = 0.5 * (grad_basis * I.col(d).transpose() + I.col(d) * grad_basis.transpose());
+            result[v*3 + d] = strain;
+        }
+    }
+
+    // result[0] = Eigen::Matrix3d::Zero(); // You can compute each strain in an Eigen::Matrix3d despite the compact `SymmetricMatrix` type it's converted to.
 
     return result;
 }
@@ -41,6 +69,18 @@ TopologyOptimizer::PerElementStiffnessMatrix TopologyOptimizer::perElementStiffn
     // TODO: Task 3.2
     // Construct the 12x12 per-element stiffness matrix.
     Ke.setIdentity();
+    StrainPhis strainVecPhis = getStrainVecPhis(e);
+
+    for (int a = 0; a < 12; a++) {
+        auto stress_a = C.doubleContract(strainVecPhis[a]);
+        for (int b = a; b < 12; b++) {
+            auto stress_ab = stress_a.doubleContract(strainVecPhis[b]);
+            Ke(a, b) = stress_ab;
+        }
+    }
+
+    Ke.triangularView<Eigen::Lower>() = Ke.transpose();
+    Ke = Ke * m_vols(e);
 
     return Ke;
 }
