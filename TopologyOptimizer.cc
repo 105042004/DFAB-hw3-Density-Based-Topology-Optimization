@@ -179,7 +179,8 @@ TopologyOptimizer::VXd TopologyOptimizer::gradVolume() const {
 
     // TODO: Task 3.5
     // Compute the gradient of volume with respect to each tet's density parameter.
-    dV_drho.setZero(numElements());
+    // dV_drho.setZero(numElements());
+    dV_drho = m_vols;
 
     return densities.backprop(dV_drho);
 }
