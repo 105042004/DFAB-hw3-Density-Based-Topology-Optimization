@@ -192,7 +192,6 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
     double lambda_max = 2;
 
     double totalVolume = m_vols.sum();
-    VXd rhos = densities.rho();
 
     // Safeguard against abrupt changes in the target volume fraction (that cannot be satisfied due to the move limit)
     if (std::abs(maxVolumeFrac - m_vols.dot(densities.rho()) / totalVolume) > 100 * ctol)
@@ -207,9 +206,11 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
         solveEquilibriumProblem(U);
 
         auto steppedVarsForLambda = [&](double lambda) -> VXd {
-            // Evaluate the beam areas rho^new(lambda) corresponding to
+            // Evaluate the element densities rho^new(lambda) corresponding to
             // Lagrange multiplier estimate `lambda`. The formula for this
             // is given in the handout.
+
+            VXd rhos = densities.rho();
             VXd rho_new(numElements());
             
             VXd m_vec(numElements());
@@ -238,11 +239,11 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
         };
 
         // Bracket the root
-        // while (constraint_eval(lambda_min) > 0) { lambda_max = lambda_min; lambda_min /= 2; }
-        // while (constraint_eval(lambda_max) < 0) { lambda_min = lambda_max; lambda_max *= 2; }
+        while (constraint_eval(lambda_min) > 0) { lambda_max = lambda_min; lambda_min /= 2; }
+        while (constraint_eval(lambda_max) < 0) { lambda_min = lambda_max; lambda_max *= 2; }
         
-        while (constraint_eval(lambda_min) > 0) { lambda_min /= 2; }
-        while (constraint_eval(lambda_max) < 0) { lambda_max *= 2; }
+        // while (constraint_eval(lambda_min) > 0) { lambda_min /= 2; }
+        // while (constraint_eval(lambda_max) < 0) { lambda_max *= 2; }
 
         // Binary Search
         double lambda_mid = 0.5 * (lambda_min + lambda_max);
