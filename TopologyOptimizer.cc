@@ -159,6 +159,12 @@ TopologyOptimizer::VXd TopologyOptimizer::gradCompliance(const MX3d &U) const {
     // TODO: Task 3.5
     // Compute the gradient of compliance with respect to each tet's density parameter.
     dJ_drho.setZero(numElements());
+    
+    for (int e = 0; e < numElements(); e++) {
+        perElementStiffnessMatrix Ke = perElementStiffnessMatrix(e);
+        Eigen::Vector3d u_e = U.row(e);
+        dJ_drho(e) = -p * (1 - Y_min) * pow(densities.rho(e), p-1) * u_e.transpose() * Ke * u_e;
+    }
 
     return densities.backprop(dJ_drho);
 }
