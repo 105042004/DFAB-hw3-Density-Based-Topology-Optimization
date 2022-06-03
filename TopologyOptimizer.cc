@@ -161,7 +161,7 @@ TopologyOptimizer::VXd TopologyOptimizer::gradCompliance(const MX3d &U) const {
     dJ_drho.setZero(numElements());
 
     for (int e = 0; e < numElements(); e++) {
-        perElementStiffnessMatrix Ke = perElementStiffnessMatrix(e);
+        PerElementStiffnessMatrix Ke = perElementStiffnessMatrix(e);
         VXd u_e(12);
         u_e <<  U.row(m_T(e, 0)).transpose(),
                 U.row(m_T(e, 1)).transpose(),
