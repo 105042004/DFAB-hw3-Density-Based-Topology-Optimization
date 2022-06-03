@@ -125,7 +125,7 @@ double TopologyOptimizer::solveEquilibriumProblem(MX3d &U) const {
         for (int i = 0; i < K.outerSize(); ++i) {           // loop over columns
             for (SpMat::InnerIterator it(K, i); it; ++it) { // loop over nonzeros in col
 
-                if (m_isSupportVar[it.col()] || m_isSupportVar[it.row()]) { // current block is constrain vertex, set to I
+                if (m_isSupportVar[it.col()] || m_isSupportVar[it.row()]) { // current var is constrain vertex, set to I
                     if (it.col() == it.row()) { // on diagonal, set to 1
                         it.valueRef() = 1.0;
                     }
@@ -192,6 +192,7 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
     double lambda_max = 2;
 
     double totalVolume = m_vols.sum();
+    VXd rhos = densities.rho();
 
     // Safeguard against abrupt changes in the target volume fraction (that cannot be satisfied due to the move limit)
     if (std::abs(maxVolumeFrac - m_vols.dot(densities.rho()) / totalVolume) > 100 * ctol)
@@ -199,6 +200,64 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
 
     // TODO: Task 3.6
     // Optimize the densities using the Optimality Criterion Algorithm
+    MX3d U;
+
+    for(size_t i = 0; i < numSteps; ++i) {
+
+        solveEquilibriumProblem(U);
+
+        auto steppedVarsForLambda = [&](double lambda) -> VXd {
+            // Evaluate the beam areas rho^new(lambda) corresponding to
+            // Lagrange multiplier estimate `lambda`. The formula for this
+            // is given in the handout.
+            VXd rho_new(numElements());
+            
+            VXd m_vec(numElements());
+            m_vec = m * VXd::Ones(numElements());
+
+            VXd grad_comp = gradCompliance(U);
+            VXd grad_vol = gradVolume();
+
+            rho_new = rhos.array() * pow(-grad_comp.array() / (lambda * grad_vol.array()), 0.5);
+
+            rho_new.cwiseMax(0.0).cwiseMax(rhos - m_vec).cwiseMin(1.0).cwiseMin(rhos + m_vec);
+            
+            return rho_new;
+        };
+
+        auto constraint_eval = [&](double lambda) {
+            // Evluate the volume constraint violation c(lambda) corresponding
+            // to the Lagrange multiplier estimate `lambda`.
+            // You will need to use `steppedVarsForLambda(lambda)` to determine
+            // the beam areas and then calculate the corresponding volume.
+            double result;
+
+            result = maxVolumeFrac * domainVolume() - m_vols.dot(steppedVarsForLambda(lambda));
+            
+            return result;
+        };
+
+        // Bracket the root
+        // while (constraint_eval(lambda_min) > 0) { lambda_max = lambda_min; lambda_min /= 2; }
+        // while (constraint_eval(lambda_max) < 0) { lambda_min = lambda_max; lambda_max *= 2; }
+        
+        while (constraint_eval(lambda_min) > 0) { lambda_min /= 2; }
+        while (constraint_eval(lambda_max) < 0) { lambda_max *= 2; }
+
+        // Binary Search
+        double lambda_mid = 0.5 * (lambda_min + lambda_max);
+        double vol_violation = constraint_eval(lambda_mid);
+
+        while (std::abs(vol_violation) > ctol) {
+            if (vol_violation < 0) lambda_min = lambda_mid;
+            if (vol_violation > 0) lambda_max = lambda_mid;
+            lambda_mid = 0.5 * (lambda_min + lambda_max);
+            vol_violation = constraint_eval(lambda_mid);
+        }
+
+        setVars(steppedVarsForLambda(lambda_mid));
+    }
+
 }
 
 SymmetricMatrixValue<double, 3> TopologyOptimizer::cauchyStress(const MX3d &U, int e) const {
