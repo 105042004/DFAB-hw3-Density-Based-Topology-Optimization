@@ -210,14 +210,18 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
             // Lagrange multiplier estimate `lambda`. The formula for this
             // is given in the handout.
 
-            VXd rhos = densities.rho();
-            VXd rho_new(numElements());
+            VXd rhos = densities.getVars();
+            VXd rho_new(rhos.size());
             
-            VXd m_vec(numElements());
-            m_vec = m * VXd::Ones(numElements());
+            VXd m_vec(rhos.size());
+            m_vec = m * VXd::Ones(rhos.size());
 
             VXd grad_comp = gradCompliance(U);
             VXd grad_vol = gradVolume();
+
+            std::cout << "grad_vol.size(): " << grad_vol.size() << std::endl;
+            std::cout << "rhos.size(): " << rhos.size() << std::endl;
+            std::cout << "numElements(): " << numElements() << std::endl;
 
             rho_new = rhos.array() * pow(-grad_comp.array() / (lambda * grad_vol.array()), 0.5);
 
@@ -229,10 +233,10 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
         auto constraint_eval = [&](double lambda) {
             // Evaluate the volume constraint violation c(lambda) corresponding
             // to the Lagrange multiplier estimate `lambda`.
-            // You will need to use `steppedVarsForLambda(lambda)` to determine
-            // the beam areas and then calculate the corresponding volume.
             double result;
-
+            for (int i = 0; i < m_vols.size(); i++) {
+                std::cout << m_vols[i] << std::endl;
+            }
             result = maxVolumeFrac * domainVolume() - m_vols.dot(steppedVarsForLambda(lambda));
             
             return result;
