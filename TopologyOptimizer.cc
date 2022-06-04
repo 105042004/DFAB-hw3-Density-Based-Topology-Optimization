@@ -265,7 +265,16 @@ SymmetricMatrixValue<double, 3> TopologyOptimizer::cauchyStress(const MX3d &U, i
     // TODO: Task 3.8
     // Compute the stress in element `e` induced by displacement field `U`.
     SymmetricMatrixValue<double, 3> result; // Note: SymmetricMatrixValue constructor zero-initializes!
-    // result = C.doubleContract()
+    SymmetricMatrixValue<double, 3> strain_u;
+    
+    StrainPhis strainVecPhis = getStrainVecPhis(e);
+
+    for (int i = 0; i < 12; i++) { // loop over 4 verticies of the element
+        strain_u += U(m_T(e, i/3), i%3) * strainVecPhis[i];
+    }
+
+    result = (Y_min + (1 - Y_min) * pow(densities.rho(e), p)) * C.doubleContract(strain_u);
+
     return result;
 }
 
