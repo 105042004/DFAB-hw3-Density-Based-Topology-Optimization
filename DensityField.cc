@@ -58,10 +58,18 @@ VoxelSmoothingFilter::VoxelSmoothingFilter(int numVoxels, Eigen::Vector3i gridSh
                 }
             }
         }
+        for (int i = 0; i < stencilMembers.size(); i++)
+            std::cout << stencilMembers[i] << " ";
+        std::cout << std::endl;
     }
 
     A.resize(numVoxels, numVoxels);
-    A.setIdentity();
+    using Triplet = Eigen::Triplet<double>;
+    std::vector<Triplet> triplets;
+    triplets.emplace_back( rowIndex, colIndex, Ke(i, j));
+
+    A.setFromTriplets(triplets.begin(), triplets.end());
+    // A.setIdentity();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

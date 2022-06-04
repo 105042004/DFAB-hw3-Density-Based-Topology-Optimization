@@ -227,7 +227,7 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
         };
 
         auto constraint_eval = [&](double lambda) {
-            // Evluate the volume constraint violation c(lambda) corresponding
+            // Evaluate the volume constraint violation c(lambda) corresponding
             // to the Lagrange multiplier estimate `lambda`.
             // You will need to use `steppedVarsForLambda(lambda)` to determine
             // the beam areas and then calculate the corresponding volume.
