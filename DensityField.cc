@@ -1,4 +1,5 @@
 #include "DensityField.hh"
+#include <iostream>
 
 // Note: the indexing here must be compatible with `vox_idx` in `GridGeneration.hh`
 inline int vox_idx(const Eigen::Vector3i &coords, const Eigen::Vector3i &gridShape) {
@@ -42,6 +43,10 @@ VoxelSmoothingFilter::VoxelSmoothingFilter(int numVoxels, Eigen::Vector3i gridSh
     // TODO: Task 3.7
     // Update this method to construct the unweighted-averaging operator as
     // sparse matrix `A`.
+    A.resize(numVoxels, numVoxels);
+
+    using Triplet = Eigen::Triplet<double>;
+    std::vector<Triplet> triplets;
 
     for (int i = 0; i < numVoxels; ++i) {
         stencilMembers.assign(1, i); // Include self
@@ -58,15 +63,11 @@ VoxelSmoothingFilter::VoxelSmoothingFilter(int numVoxels, Eigen::Vector3i gridSh
                 }
             }
         }
-        for (int i = 0; i < stencilMembers.size(); i++)
-            std::cout << stencilMembers[i] << " ";
-        std::cout << std::endl;
-    }
 
-    A.resize(numVoxels, numVoxels);
-    using Triplet = Eigen::Triplet<double>;
-    std::vector<Triplet> triplets;
-    triplets.emplace_back( rowIndex, colIndex, Ke(i, j));
+        for (int j = 0; j < stencilMembers.size(); j++) {
+            triplets.emplace_back( i, stencilMembers[j], 1.0/stencilMembers.size());
+        }
+    }
 
     A.setFromTriplets(triplets.begin(), triplets.end());
     // A.setIdentity();
