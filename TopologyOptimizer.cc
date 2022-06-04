@@ -205,6 +205,9 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
 
         solveEquilibriumProblem(U);
 
+        VXd grad_comp = gradCompliance(U);
+        VXd grad_vol = gradVolume();
+
         auto steppedVarsForLambda = [&](double lambda) -> VXd {
             // Evaluate the element densities rho^new(lambda) corresponding to
             // Lagrange multiplier estimate `lambda`. The formula for this
@@ -215,13 +218,6 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
             
             VXd m_vec(rhos.size());
             m_vec = m * VXd::Ones(rhos.size());
-
-            VXd grad_comp = gradCompliance(U);
-            VXd grad_vol = gradVolume();
-
-            std::cout << "grad_vol.size(): " << grad_vol.size() << std::endl;
-            std::cout << "rhos.size(): " << rhos.size() << std::endl;
-            std::cout << "numElements(): " << numElements() << std::endl;
 
             rho_new = rhos.array() * pow(-grad_comp.array() / (lambda * grad_vol.array()), 0.5);
 
@@ -234,10 +230,10 @@ void TopologyOptimizer::optimizeOC(int numSteps) {
             // Evaluate the volume constraint violation c(lambda) corresponding
             // to the Lagrange multiplier estimate `lambda`.
             double result;
-            for (int i = 0; i < m_vols.size(); i++) {
-                std::cout << m_vols[i] << std::endl;
-            }
-            result = maxVolumeFrac * domainVolume() - m_vols.dot(steppedVarsForLambda(lambda));
+
+            VXd rho_new = densities.densitiesForVars(steppedVarsForLambda(lambda));
+
+            result = maxVolumeFrac * domainVolume() - m_vols.dot(rho_new);
             
             return result;
         };
@@ -269,7 +265,7 @@ SymmetricMatrixValue<double, 3> TopologyOptimizer::cauchyStress(const MX3d &U, i
     // TODO: Task 3.8
     // Compute the stress in element `e` induced by displacement field `U`.
     SymmetricMatrixValue<double, 3> result; // Note: SymmetricMatrixValue constructor zero-initializes!
-
+    // result = C.doubleContract()
     return result;
 }
 
